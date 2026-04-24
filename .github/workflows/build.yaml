@@ -48,6 +48,8 @@ jobs:
       env:
         ARCH: arm
         CROSS_COMPILE: arm-linux-gnueabihf-
+        # 与内核头 ARMv7 内存屏障 (isb) 一致；仅设 march/mtune，避免与 kbuild 自带浮点选项冲突
+        KCFLAGS: -march=armv7-a -mtune=cortex-a7
       run: |
         # 本仓库为 mediatek 官方 STA 树（src/Makefile），非 kuba-moo 的 in-tree mt7601u.ko
         echo "🔨 在 src/ 中交叉编译（KDIR=kernel-source，产 mt7601Usta.ko）"
