@@ -22,7 +22,7 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-arm-linux-gnueabihf make bc bison flex libssl-dev wget kmod
+        sudo apt-get install -y build-essential gcc-arm-linux-gnueabihf make bc bison flex libssl-dev wget kmod
 
     - name: Setup Kernel Source
       run: |
@@ -40,18 +40,23 @@ jobs:
         echo "👇 期望的内核 version 字符串: $(make -s ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- kernelrelease)"
         echo "👇 准备编译外置模块头/脚本..."
         make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- prepare
+        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- modules_prepare
 
     - name: Build Module
+      env:
+        ARCH: arm
+        CROSS_COMPILE: arm-linux-gnueabihf-
       run: |
-        echo "🔨 开始交叉编译驱动（ARCH=arm + arm-linux-gnueabihf-，KDIR=kernel 4.4.35 树）"
-        make -C kernel-source M=$(pwd) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- modules
-
-        echo "✅ 编译完成，文件与 vermagic："
-        ls -lh mt7601u.ko
-        modinfo mt7601u.ko
+        # 本仓库为 mediatek 官方 STA 树（src/Makefile），非 kuba-moo 的 in-tree mt7601u.ko
+        echo "🔨 在 src/ 中交叉编译（KDIR=kernel-source，产 mt7601Usta.ko）"
+        cd src
+        make all TARGET=LINUX CHIPSET=7601U "LINUX_SRC=${GITHUB_WORKSPACE}/kernel-source" "CROSS_COMPILE=arm-linux-gnueabihf-"
+        echo "✅ 编译完成："
+        ls -lh "os/linux/mt7601Usta.ko"
+        modinfo "os/linux/mt7601Usta.ko"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: mt7601u-driver
-        path: mt7601u.ko
+        path: src/os/linux/mt7601Usta.ko
