@@ -14,7 +14,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    # ubuntu-20.04 托管镜像已退役，会一直排队；用 22.04/24.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout Driver Source
