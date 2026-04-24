@@ -1,0 +1,58 @@
+# 目标参考：海思 hi3798mv100 类机顶盒
+#   uname: Linux 4.4.35, armv7l, ARM Cortex-A7, little endian
+#  工具链：arm-linux-gnueabihf（硬浮点，与常见 armv7l 根文件系统一致）
+#  如 insmod 报 vermagic 不符：本机构 config 与厂商树仍可能不同，需要对方内核源码/配置
+#  或设备上 /boot 同版本 config、Module.symvers 后再编。
+
+name: Build MT7601U Driver (Blind Config)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout Driver Source
+      uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-arm-linux-gnueabihf make bc bison flex libssl-dev wget kmod
+
+    - name: Setup Kernel Source
+      run: |
+        set -e
+        echo "👇 下载与设备同主版本的 Linux 4.4.35 上游源码..."
+        wget -q https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.35.tar.xz
+        tar -xf linux-4.4.35.tar.xz
+        mv linux-4.4.35 kernel-source
+
+        echo "👇 ARMv7 多平台 defconfig（Cortex-A7 / 与 armv7l SMP 线一致），不做 LOCALVERSION 后缀"
+        cd kernel-source
+        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- multi_v7_defconfig
+        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- olddefconfig
+
+        echo "👇 期望的内核 version 字符串: $(make -s ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- kernelrelease)"
+        echo "👇 准备编译外置模块头/脚本..."
+        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- prepare
+
+    - name: Build Module
+      run: |
+        echo "🔨 开始交叉编译驱动（ARCH=arm + arm-linux-gnueabihf-，KDIR=kernel 4.4.35 树）"
+        make -C kernel-source M=$(pwd) ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- modules
+
+        echo "✅ 编译完成，文件与 vermagic："
+        ls -lh mt7601u.ko
+        modinfo mt7601u.ko
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: mt7601u-driver
+        path: mt7601u.ko
