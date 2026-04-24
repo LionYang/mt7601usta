@@ -33,14 +33,16 @@ jobs:
         mv linux-4.4.35 kernel-source
 
         echo "👇 ARMv7 多平台 defconfig（Cortex-A7 / 与 armv7l SMP 线一致），不做 LOCALVERSION 后缀"
+        # GCC 10+ 默认 -fno-common，老 4.4 编 scripts/dtc 时 lex/bison 会报 yylloc 多重定义，需 -fcommon
         cd kernel-source
-        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- multi_v7_defconfig
-        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- olddefconfig
+        _hcf='HOSTCFLAGS=-O2 -fcommon' ; _hcxx='HOSTCXXFLAGS=-O2 -fcommon'
+        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- "$_hcf" "$_hcxx" multi_v7_defconfig
+        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- "$_hcf" "$_hcxx" olddefconfig
 
         echo "👇 期望的内核 version 字符串: $(make -s ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- kernelrelease)"
         echo "👇 准备编译外置模块头/脚本..."
-        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- prepare
-        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- modules_prepare
+        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- "$_hcf" "$_hcxx" prepare
+        make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- "$_hcf" "$_hcxx" modules_prepare
 
     - name: Build Module
       env:
