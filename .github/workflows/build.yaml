@@ -7,9 +7,7 @@
 name: Build MT7601U Driver (Blind Config)
 
 on:
-  push:
-    tags:
-      - 'v*'
+  push: {}
   workflow_dispatch:
 
 jobs:
@@ -19,7 +17,7 @@ jobs:
 
     steps:
     - name: Checkout Driver Source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install Dependencies
       run: |
@@ -53,7 +51,7 @@ jobs:
         modinfo mt7601u.ko
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: mt7601u-driver
         path: mt7601u.ko
